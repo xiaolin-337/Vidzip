@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🎬 视频压缩工具</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #e0e0e0;
+    }
+
+    .container {
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 36px;
+      width: 100%;
+      max-width: 680px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 6px;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.4);
+      margin-bottom: 28px;
+    }
+
+    /* Drop Zone */
+    .drop-zone {
+      border: 2px dashed rgba(167,139,250,0.4);
+      border-radius: 14px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: rgba(167,139,250,0.04);
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #a78bfa;
+      background: rgba(167,139,250,0.1);
+    }
+    .drop-zone input[type="file"] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .drop-icon { font-size: 2.8rem; margin-bottom: 10px; }
+    .drop-text { font-size: 0.95rem; color: rgba(255,255,255,0.6); }
+    .drop-text span { color: #a78bfa; font-weight: 600; }
+
+    /* Video Info */
+    .video-info {
+      display: none;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 20px;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .video-info.show { display: block; }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.84rem;
+      padding: 4px 0;
+      color: rgba(255,255,255,0.7);
+    }
+    .info-row b { color: #fff; }
+
+    /* Preview */
+    .preview-wrap {
+      display: none;
+      margin-top: 16px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .preview-wrap.show { display: block; }
+    video { width: 100%; display: block; max-height: 260px; background: #000; }
+
+    /* Controls */
+    .controls { margin-top: 24px; display: flex; flex-direction: column; gap: 18px; }
+
+    .control-group label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      color: rgba(255,255,255,0.75);
+    }
+    .control-group label span {
+      background: rgba(167,139,250,0.25);
+      color: #a78bfa;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.1);
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(167,139,250,0.6);
+    }
+
+    .select-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    select {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 10px;
+      color: #fff;
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      width: 100%;
+      outline: none;
+      cursor: pointer;
+    }
+    select option { background: #302b63; }
+
+    /* Buttons */
+    .btn-compress {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #a78bfa, #60a5fa);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-compress:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-compress:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    /* Progress */
+    .progress-wrap {
+      display: none;
+      margin-top: 20px;
+    }
+    .progress-wrap.show { display: block; }
+    .progress-bar-bg {
+      background: rgba(255,255,255,0.08);
+      border-radius: 8px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 8px;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa);
+      transition: width 0.3s;
+      width: 0%;
+    }
+    .progress-label {
+      text-align: center;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.5);
+      margin-top: 8px;
+    }
+
+    /* Result */
+    .result-box {
+      display: none;
+      margin-top: 22px;
+      background: rgba(96,165,250,0.07);
+      border: 1px solid rgba(96,165,250,0.25);
+      border-radius: 14px;
+      padding: 20px;
+    }
+    .result-box.show { display: block; }
+    .result-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-card .val {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #a78bfa;
+    }
+    .stat-card .lbl {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.45);
+      margin-top: 3px;
+    }
+    .stat-card.green .val { color: #34d399; }
+
+    .btn-download {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #34d399, #059669);
+      color: #fff;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-download:hover { opacity: 0.9; }
+
+    /* Reset */
+    .btn-reset {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.82rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-reset:hover { border-color: rgba(255,255,255,0.35); color: rgba(255,255,255,0.7); }
+
+    .badge {
+      display: inline-block;
+      background: rgba(167,139,250,0.15);
+      color: #a78bfa;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      border: 1px solid rgba(167,139,250,0.3);
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    @media (max-width: 480px) {
+      .result-stats { grid-template-columns: 1fr 1fr; }
+      .select-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🎬 视频压缩工具</h1>
+  <p class="subtitle">纯浏览器端处理 · 文件不上传服务器 · 隐私安全<span class="badge">🔒 本地</span></p>
+
+  <!-- Drop Zone -->
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept="video/*" />
+    <div class="drop-icon">📁</div>
+    <div class="drop-text">拖拽视频文件到这里，或 <span>点击选择</span></div>
+    <div style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:8px;">支持 MP4 / WebM / MOV / AVI 等格式</div>
+  </div>
+
+  <!-- Video Info -->
+  <div class="video-info" id="videoInfo">
+    <div class="info-row"><span>文件名</span><b id="infoName">-</b></div>
+    <div class="info-row"><span>原始大小</span><b id="infoSize">-</b></div>
+    <div class="info-row"><span>时长</span><b id="infoDuration">-</b></div>
+    <div class="info-row"><span>分辨率</span><b id="infoResolution">-</b></div>
+  </div>
+
+  <!-- Preview -->
+  <div class="preview-wrap" id="previewWrap">
+    <video id="previewVideo" controls muted playsinline></video>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls" id="controls" style="display:none;">
+
+    <div class="control-group">
+      <label>压缩质量 <span id="qualityVal">中等 (0.6)</span></label>
+      <input type="range" id="qualityRange" min="0.1" max="1" step="0.05" value="0.6" />
+    </div>
+
+    <div class="control-group">
+      <label>输出分辨率缩放 <span id="scaleVal">75%</span></label>
+      <input type="range" id="scaleRange" min="0.25" max="1" step="0.05" value="0.75" />
+    </div>
+
+    <div class="select-row">
+      <div>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:6px;">输出格式</div>
+        <select id="formatSelect">
+          <option value="video/webm;codecs=vp9">WebM (VP9) — 推荐</option>
+          <option value="video/webm;codecs=vp8">WebM (VP8)</option>
+          <option value="video/mp4">MP4 (H.264)</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:6px;">速度优先</div>
+        <select id="speedSelect">
+          <option value="1">正常速度</option>
+          <option value="2">2× 加速处理</option>
+          <option value="4">4× 快速处理</option>
+          <option value="0.5">0.5× 慢速（高质量）</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-compress" id="btnCompress">⚡ 开始压缩</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar-bg">
+      <div class="progress-bar-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">正在处理...</div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-box" id="resultBox">
+    <div class="result-stats">
+      <div class="stat-card">
+        <div class="val" id="resBefore">-</div>
+        <div class="lbl">压缩前</div>
+      </div>
+      <div class="stat-card">
+        <div class="val" id="resAfter">-</div>
+        <div class="lbl">压缩后</div>
+      </div>
+      <div class="stat-card green">
+        <div class="val" id="resSaved">-</div>
+        <div class="lbl">节省空间</div>
+      </div>
+    </div>
+    <button class="btn-download" id="btnDownload">⬇ 下载压缩视频</button>
+    <button class="btn-reset" id="btnReset">↩ 重新开始</button>
+  </div>
+</div>
+
+<script>
+  // ─── State ───────────────────────────────────────────────────
+  let originalFile = null;
+  let outputBlob   = null;
+  let outputExt    = 'webm';
+
+  // ─── Elements ────────────────────────────────────────────────
+  const dropZone      = document.getElementById('dropZone');
+  const fileInput     = document.getElementById('fileInput');
+  const videoInfo     = document.getElementById('videoInfo');
+  const previewWrap   = document.getElementById('previewWrap');
+  const previewVideo  = document.getElementById('previewVideo');
+  const controls      = document.getElementById('controls');
+  const qualityRange  = document.getElementById('qualityRange');
+  const qualityVal    = document.getElementById('qualityVal');
+  const scaleRange    = document.getElementById('scaleRange');
+  const scaleVal      = document.getElementById('scaleVal');
+  const formatSelect  = document.getElementById('formatSelect');
+  const speedSelect   = document.getElementById('speedSelect');
+  const btnCompress   = document.getElementById('btnCompress');
+  const progressWrap  = document.getElementById('progressWrap');
+  const progressFill  = document.getElementById('progressFill');
+  const progressLabel = document.getElementById('progressLabel');
+  const resultBox     = document.getElementById('resultBox');
+  const btnDownload   = document.getElementById('btnDownload');
+  const btnReset      = document.getElementById('btnReset');
+
+  // ─── Helpers ─────────────────────────────────────────────────
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+  }
+
+  function formatDuration(sec) {
+    const m = Math.floor(sec / 60).toString().padStart(2, '0');
+    const s = Math.floor(sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function qualityLabel(v) {
+    v = parseFloat(v);
+    if (v >= 0.85) return `超高 (${v})`;
+    if (v >= 0.65) return `中等 (${v})`;
+    if (v >= 0.40) return `较低 (${v})`;
+    return `最低 (${v})`;
+  }
+
+  function scaleLabel(v) {
+    return Math.round(parseFloat(v) * 100) + '%';
+  }
+
+  // ─── Drag & Drop ─────────────────────────────────────────────
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('video/')) loadFile(f);
+    else alert('请选择有效的视频文件');
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) loadFile(fileInput.files[0]);
+  });
+
+  // ─── Load File ───────────────────────────────────────────────
+  function loadFile(file) {
+    originalFile = file;
+    const url = URL.createObjectURL(file);
+
+    document.getElementById('infoName').textContent = file.name.length > 30
+      ? file.name.substring(0, 28) + '…' : file.name;
+    document.getElementById('infoSize').textContent = formatBytes(file.size);
+
+    previewVideo.src = url;
+    previewVideo.onloadedmetadata = () => {
+      document.getElementById('infoDuration').textContent   = formatDuration(previewVideo.duration);
+      document.getElementById('infoResolution').textContent = `${previewVideo.videoWidth} × ${previewVideo.videoHeight}`;
+    };
+
+    videoInfo.classList.add('show');
+    previewWrap.classList.add('show');
+    controls.style.display = 'flex';
+    resultBox.classList.remove('show');
+    progressWrap.classList.remove('show');
+  }
+
+  // ─── Range Sliders ───────────────────────────────────────────
+  qualityRange.addEventListener('input', () => qualityVal.textContent = qualityLabel(qualityRange.value));
+  scaleRange.addEventListener('input', () => scaleVal.textContent = scaleLabel(scaleRange.value));
+
+  // ─── Compress ────────────────────────────────────────────────
+  btnCompress.addEventListener('click', startCompress);
+
+  async function startCompress() {
+    if (!originalFile) return;
+
+    const quality   = parseFloat(qualityRange.value);
+    const scale     = parseFloat(scaleRange.value);
+    const mimeType  = formatSelect.value;
+    const playSpeed = parseFloat(speedSelect.value);
+
+    // Determine extension
+    outputExt = mimeType.includes('mp4') ? 'mp4' : 'webm';
+
+    // Check support
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      alert(`⚠ 您的浏览器不支持 "${mimeType}"，请换用 WebM 格式或升级浏览器（推荐 Chrome）。`);
+      return;
+    }
+
+    // UI
+    btnCompress.disabled = true;
+    progressWrap.classList.add('show');
+    resultBox.classList.remove('show');
+    setProgress(0, '正在初始化...');
+
+    const srcUrl = URL.createObjectURL(originalFile);
+
+    // Create offscreen video
+    const vid = document.createElement('video');
+    vid.src  = srcUrl;
+    vid.muted = true;
+    vid.playbackRate = playSpeed;
+    await new Promise(r => { vid.onloadedmetadata = r; });
+
+    const W = Math.round(vid.videoWidth  * scale);
+    const H = Math.round(vid.videoHeight * scale);
+    const duration = vid.duration;
+
+    // Canvas
+    const canvas = document.createElement('canvas');
+    canvas.width  = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Bitrate estimation
+    const bitsPerPixel = quality * 0.08;
+    const fps = 30;
+    const videoBitrate = Math.round(W * H * fps * bitsPerPixel);
+
+    // MediaRecorder on canvas stream
+    const stream = canvas.captureStream(fps);
+    const recorder = new MediaRecorder(stream, {
+      mimeType,
+      videoBitsPerSecond: videoBitrate
+    });
+
+    const chunks = [];
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+
+    recorder.onstop = () => {
+      outputBlob = new Blob(chunks, { type: mimeType.split(';')[0] });
+      showResult(outputBlob);
+      URL.revokeObjectURL(srcUrl);
+    };
+
+    recorder.start(200); // collect every 200ms
+
+    // Draw loop
+    vid.currentTime = 0;
+    await new Promise(r => { vid.onseeked = r; });
+    vid.play();
+
+    const drawFrame = () => {
+      if (vid.ended || vid.currentTime >= duration) {
+        recorder.stop();
+        setProgress(100, '✅ 压缩完成！');
+        btnCompress.disabled = false;
+        return;
+      }
+      ctx.drawImage(vid, 0, 0, W, H);
+      const pct = Math.min(99, Math.round((vid.currentTime / duration) * 100));
+      setProgress(pct, `⚙ 处理中... ${pct}%  (${formatDuration(vid.currentTime)} / ${formatDuration(duration)})`);
+      requestAnimationFrame(drawFrame);
+    };
+
+    vid.onplay = () => requestAnimationFrame(drawFrame);
+  }
+
+  function setProgress(pct, label) {
+    progressFill.style.width = pct + '%';
+    progressLabel.textContent = label;
+  }
+
+  // ─── Show Result ─────────────────────────────────────────────
+  function showResult(blob) {
+    const before = originalFile.size;
+    const after  = blob.size;
+    const saved  = Math.max(0, Math.round((1 - after / before) * 100));
+
+    document.getElementById('resBefore').textContent = formatBytes(before);
+    document.getElementById('resAfter').textContent  = formatBytes(after);
+    document.getElementById('resSaved').textContent  = saved + '%';
+    resultBox.classList.add('show');
+  }
+
+  // ─── Download ────────────────────────────────────────────────
+  btnDownload.addEventListener('click', () => {
+    if (!outputBlob) return;
+    const name = (originalFile.name.replace(/\.[^.]+$/, '') || 'video') + '_compressed.' + outputExt;
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(outputBlob);
+    a.download = name;
+    a.click();
+  });
+
+  // ─── Reset ───────────────────────────────────────────────────
+  btnReset.addEventListener('click', () => {
+    originalFile = null;
+    outputBlob   = null;
+    fileInput.value = '';
+    previewVideo.src = '';
+    videoInfo.classList.remove('show');
+    previewWrap.classList.remove('show');
+    controls.style.display = 'none';
+    progressWrap.classList.remove('show');
+    resultBox.classList.remove('show');
+    progressFill.style.width = '0%';
+    btnCompress.disabled = false;
+  });
+</script>
+</body>
+</html>
