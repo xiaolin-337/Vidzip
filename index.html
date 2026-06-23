@@ -1,599 +1,703 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>🎬 视频压缩工具</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      color: #e0e0e0;
-    }
-
-    .container {
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 20px;
-      padding: 36px;
-      width: 100%;
-      max-width: 680px;
-      box-shadow: 0 30px 80px rgba(0,0,0,0.5);
-    }
-
-    h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 6px;
-      background: linear-gradient(90deg, #a78bfa, #60a5fa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .subtitle {
-      text-align: center;
-      font-size: 0.82rem;
-      color: rgba(255,255,255,0.4);
-      margin-bottom: 28px;
-    }
-
-    /* Drop Zone */
-    .drop-zone {
-      border: 2px dashed rgba(167,139,250,0.4);
-      border-radius: 14px;
-      padding: 40px 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: all 0.3s;
-      background: rgba(167,139,250,0.04);
-      position: relative;
-    }
-    .drop-zone:hover, .drop-zone.drag-over {
-      border-color: #a78bfa;
-      background: rgba(167,139,250,0.1);
-    }
-    .drop-zone input[type="file"] {
-      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
-    }
-    .drop-icon { font-size: 2.8rem; margin-bottom: 10px; }
-    .drop-text { font-size: 0.95rem; color: rgba(255,255,255,0.6); }
-    .drop-text span { color: #a78bfa; font-weight: 600; }
-
-    /* Video Info */
-    .video-info {
-      display: none;
-      background: rgba(255,255,255,0.05);
-      border-radius: 12px;
-      padding: 16px 20px;
-      margin-top: 20px;
-      border: 1px solid rgba(255,255,255,0.08);
-    }
-    .video-info.show { display: block; }
-    .info-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.84rem;
-      padding: 4px 0;
-      color: rgba(255,255,255,0.7);
-    }
-    .info-row b { color: #fff; }
-
-    /* Preview */
-    .preview-wrap {
-      display: none;
-      margin-top: 16px;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .preview-wrap.show { display: block; }
-    video { width: 100%; display: block; max-height: 260px; background: #000; }
-
-    /* Controls */
-    .controls { margin-top: 24px; display: flex; flex-direction: column; gap: 18px; }
-
-    .control-group label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.85rem;
-      margin-bottom: 8px;
-      color: rgba(255,255,255,0.75);
-    }
-    .control-group label span {
-      background: rgba(167,139,250,0.25);
-      color: #a78bfa;
-      padding: 2px 8px;
-      border-radius: 6px;
-      font-weight: 700;
-      font-size: 0.8rem;
-    }
-
-    input[type="range"] {
-      -webkit-appearance: none;
-      width: 100%;
-      height: 6px;
-      border-radius: 4px;
-      background: rgba(255,255,255,0.1);
-      outline: none;
-    }
-    input[type="range"]::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 18px; height: 18px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #a78bfa, #60a5fa);
-      cursor: pointer;
-      box-shadow: 0 0 8px rgba(167,139,250,0.6);
-    }
-
-    .select-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-
-    select {
-      background: rgba(255,255,255,0.08);
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 10px;
-      color: #fff;
-      padding: 10px 12px;
-      font-size: 0.85rem;
-      width: 100%;
-      outline: none;
-      cursor: pointer;
-    }
-    select option { background: #302b63; }
-
-    /* Buttons */
-    .btn-compress {
-      width: 100%;
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #a78bfa, #60a5fa);
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      letter-spacing: 0.5px;
-      margin-top: 4px;
-      transition: opacity 0.2s, transform 0.1s;
-    }
-    .btn-compress:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn-compress:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-    /* Progress */
-    .progress-wrap {
-      display: none;
-      margin-top: 20px;
-    }
-    .progress-wrap.show { display: block; }
-    .progress-bar-bg {
-      background: rgba(255,255,255,0.08);
-      border-radius: 8px;
-      height: 10px;
-      overflow: hidden;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      border-radius: 8px;
-      background: linear-gradient(90deg, #a78bfa, #60a5fa);
-      transition: width 0.3s;
-      width: 0%;
-    }
-    .progress-label {
-      text-align: center;
-      font-size: 0.82rem;
-      color: rgba(255,255,255,0.5);
-      margin-top: 8px;
-    }
-
-    /* Result */
-    .result-box {
-      display: none;
-      margin-top: 22px;
-      background: rgba(96,165,250,0.07);
-      border: 1px solid rgba(96,165,250,0.25);
-      border-radius: 14px;
-      padding: 20px;
-    }
-    .result-box.show { display: block; }
-    .result-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    .stat-card {
-      background: rgba(255,255,255,0.05);
-      border-radius: 10px;
-      padding: 12px;
-      text-align: center;
-    }
-    .stat-card .val {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #a78bfa;
-    }
-    .stat-card .lbl {
-      font-size: 0.72rem;
-      color: rgba(255,255,255,0.45);
-      margin-top: 3px;
-    }
-    .stat-card.green .val { color: #34d399; }
-
-    .btn-download {
-      width: 100%;
-      padding: 13px;
-      border: none;
-      border-radius: 12px;
-      background: linear-gradient(135deg, #34d399, #059669);
-      color: #fff;
-      font-size: 0.95rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: opacity 0.2s;
-    }
-    .btn-download:hover { opacity: 0.9; }
-
-    /* Reset */
-    .btn-reset {
-      display: block;
-      width: 100%;
-      margin-top: 10px;
-      padding: 10px;
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 10px;
-      color: rgba(255,255,255,0.4);
-      font-size: 0.82rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-reset:hover { border-color: rgba(255,255,255,0.35); color: rgba(255,255,255,0.7); }
-
-    .badge {
-      display: inline-block;
-      background: rgba(167,139,250,0.15);
-      color: #a78bfa;
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: 20px;
-      border: 1px solid rgba(167,139,250,0.3);
-      margin-left: 6px;
-      vertical-align: middle;
-    }
-
-    @media (max-width: 480px) {
-      .result-stats { grid-template-columns: 1fr 1fr; }
-      .select-row { grid-template-columns: 1fr; }
-    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',sans-serif;background:linear-gradient(135deg,#0f0c29,#302b63,#24243e);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;color:#e0e0e0}
+    .container{background:rgba(255,255,255,.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:36px;width:100%;max-width:680px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+    h1{font-size:1.6rem;font-weight:700;text-align:center;margin-bottom:6px;background:linear-gradient(90deg,#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .subtitle{text-align:center;font-size:.82rem;color:rgba(255,255,255,.4);margin-bottom:8px}
+    .badge{display:inline-block;background:rgba(167,139,250,.15);color:#a78bfa;font-size:.7rem;padding:2px 8px;border-radius:20px;border:1px solid rgba(167,139,250,.3);margin-left:6px;vertical-align:middle}
+    .drop-zone{border:2px dashed rgba(167,139,250,.4);border-radius:14px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .3s;background:rgba(167,139,250,.04);position:relative}
+    .drop-zone:hover,.drop-zone.drag-over{border-color:#a78bfa;background:rgba(167,139,250,.1)}
+    .drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .drop-icon{font-size:2.8rem;margin-bottom:10px}
+    .drop-text{font-size:.95rem;color:rgba(255,255,255,.6)}
+    .drop-text span{color:#a78bfa;font-weight:600}
+    .video-info{display:none;background:rgba(255,255,255,.05);border-radius:12px;padding:16px 20px;margin-top:20px;border:1px solid rgba(255,255,255,.08)}
+    .video-info.show{display:block}
+    .info-row{display:flex;justify-content:space-between;font-size:.84rem;padding:4px 0;color:rgba(255,255,255,.7)}
+    .info-row b{color:#fff}
+    .preview-wrap{display:none;margin-top:16px;border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.1)}
+    .preview-wrap.show{display:block}
+    video{width:100%;display:block;max-height:260px;background:#000}
+    .controls{margin-top:24px;display:flex;flex-direction:column;gap:18px}
+    .control-group label{display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:8px;color:rgba(255,255,255,.75)}
+    .control-group label span{background:rgba(167,139,250,.25);color:#a78bfa;padding:2px 8px;border-radius:6px;font-weight:700;font-size:.8rem}
+    input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:4px;background:rgba(255,255,255,.1);outline:none}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#a78bfa,#60a5fa);cursor:pointer;box-shadow:0 0 8px rgba(167,139,250,.6)}
+    .select-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .select-label{font-size:.8rem;color:rgba(255,255,255,.5);margin-bottom:6px}
+    select{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:10px;color:#fff;padding:10px 12px;font-size:.85rem;width:100%;outline:none;cursor:pointer}
+    select option{background:#302b63}
+    .format-tip{font-size:.72rem;color:rgba(255,255,255,.35);margin-top:5px;min-height:16px}
+    .btn-compress{width:100%;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#a78bfa,#60a5fa);color:#fff;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.5px;margin-top:4px;transition:opacity .2s,transform .1s}
+    .btn-compress:hover{opacity:.9;transform:translateY(-1px)}
+    .btn-compress:disabled{opacity:.4;cursor:not-allowed;transform:none}
+    .progress-wrap{display:none;margin-top:20px}
+    .progress-wrap.show{display:block}
+    .progress-bar-bg{background:rgba(255,255,255,.08);border-radius:8px;height:10px;overflow:hidden}
+    .progress-bar-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,#a78bfa,#60a5fa);transition:width .15s;width:0%}
+    .progress-label{text-align:center;font-size:.82rem;color:rgba(255,255,255,.5);margin-top:8px;min-height:20px}
+    .result-box{display:none;margin-top:22px;background:rgba(96,165,250,.07);border:1px solid rgba(96,165,250,.25);border-radius:14px;padding:20px}
+    .result-box.show{display:block}
+    .result-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+    .stat-card{background:rgba(255,255,255,.05);border-radius:10px;padding:12px;text-align:center}
+    .stat-card .val{font-size:1.2rem;font-weight:700;color:#a78bfa}
+    .stat-card .lbl{font-size:.72rem;color:rgba(255,255,255,.45);margin-top:3px}
+    .stat-card.green .val{color:#34d399}
+    .btn-download{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#34d399,#059669);color:#fff;font-size:.95rem;font-weight:700;cursor:pointer;transition:opacity .2s}
+    .btn-download:hover{opacity:.9}
+    .btn-reset{display:block;width:100%;margin-top:10px;padding:10px;background:transparent;border:1px solid rgba(255,255,255,.15);border-radius:10px;color:rgba(255,255,255,.4);font-size:.82rem;cursor:pointer;transition:all .2s}
+    .btn-reset:hover{border-color:rgba(255,255,255,.35);color:rgba(255,255,255,.7)}
+    @media(max-width:480px){.result-stats{grid-template-columns:1fr 1fr}.select-row{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-
 <div class="container">
   <h1>🎬 视频压缩工具</h1>
-  <p class="subtitle">纯浏览器端处理 · 文件不上传服务器 · 隐私安全<span class="badge">🔒 本地</span></p>
+  <p class="subtitle">纯浏览器端处理 · 文件不上传服务器<span class="badge">🔒 本地</span></p>
 
-  <!-- Drop Zone -->
-  <div class="drop-zone" id="dropZone">
-    <input type="file" id="fileInput" accept="video/*" />
+<div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept="video/*"/>
     <div class="drop-icon">📁</div>
-    <div class="drop-text">拖拽视频文件到这里，或 <span>点击选择</span></div>
-    <div style="font-size:0.75rem;color:rgba(255,255,255,0.3);margin-top:8px;">支持 MP4 / WebM / MOV / AVI 等格式</div>
-  </div>
+    <div class="drop-text">拖拽视频到这里，或 <span>点击选择</span></div>
+    <div style="font-size:.75rem;color:rgba(255,255,255,.3);margin-top:8px">支持 MP4 / WebM / MOV / AVI 等</div>
+    <!-- ✅ 新增提示行 -->
+    <div style="font-size:.72rem;color:rgba(255,255,255,.25);margin-top:6px">⏳ 上传后需约 3 秒分析视频信息，请耐心等待</div>
+</div>
 
-  <!-- Video Info -->
   <div class="video-info" id="videoInfo">
     <div class="info-row"><span>文件名</span><b id="infoName">-</b></div>
     <div class="info-row"><span>原始大小</span><b id="infoSize">-</b></div>
     <div class="info-row"><span>时长</span><b id="infoDuration">-</b></div>
-    <div class="info-row"><span>分辨率</span><b id="infoResolution">-</b></div>
+    <div class="info-row"><span>分辨率 / 帧率</span><b id="infoResolution">-</b></div>
   </div>
 
-  <!-- Preview -->
   <div class="preview-wrap" id="previewWrap">
     <video id="previewVideo" controls muted playsinline></video>
   </div>
 
-  <!-- Controls -->
-  <div class="controls" id="controls" style="display:none;">
-
+  <div class="controls" id="controls" style="display:none">
     <div class="control-group">
-      <label>压缩质量 <span id="qualityVal">中等 (0.6)</span></label>
-      <input type="range" id="qualityRange" min="0.1" max="1" step="0.05" value="0.6" />
+<label>压缩质量 <span id="qualityVal">中等 (0.7)</span></label>
+<input type="range" id="qualityRange" min="0.1" max="1" step="0.05" value="0.7"/>
     </div>
-
     <div class="control-group">
-      <label>输出分辨率缩放 <span id="scaleVal">75%</span></label>
-      <input type="range" id="scaleRange" min="0.25" max="1" step="0.05" value="0.75" />
+<label>分辨率缩放 <span id="scaleVal">100%</span></label>
+<input type="range" id="scaleRange" min="0.25" max="1" step="0.05" value="1"/>
     </div>
-
     <div class="select-row">
       <div>
-        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:6px;">输出格式</div>
-        <select id="formatSelect">
-          <option value="video/webm;codecs=vp9">WebM (VP9) — 推荐</option>
-          <option value="video/webm;codecs=vp8">WebM (VP8)</option>
-          <option value="video/mp4">MP4 (H.264)</option>
+        <div class="select-label">输出格式</div>
+        <select id="formatSelect" onchange="onFormatChange()">
+          <option value="mp4"  selected>MP4 (H.264) — 默认</option>
+          <option value="mov"       >MOV (QuickTime)</option>
+          <option value="webm-vp9"  >WebM (VP9)</option>
+          <option value="webm-vp8"  >WebM (VP8)</option>
         </select>
+        <div class="format-tip" id="formatTip">兼容性最佳，适合所有平台</div>
       </div>
       <div>
-        <div style="font-size:0.8rem;color:rgba(255,255,255,0.5);margin-bottom:6px;">速度优先</div>
-        <select id="speedSelect">
-          <option value="1">正常速度</option>
-          <option value="2">2× 加速处理</option>
-          <option value="4">4× 快速处理</option>
-          <option value="0.5">0.5× 慢速（高质量）</option>
+        <div class="select-label">输出帧率</div>
+        <select id="fpsSelect">
+          <option value="0" selected>自动（与源相同）</option>
+          <option value="60">60 fps</option>
+          <option value="30">30 fps</option>
+          <option value="25">25 fps</option>
+          <option value="24">24 fps</option>
+          <option value="15">15 fps（省流量）</option>
         </select>
       </div>
     </div>
-
     <button class="btn-compress" id="btnCompress">⚡ 开始压缩</button>
   </div>
 
-  <!-- Progress -->
   <div class="progress-wrap" id="progressWrap">
-    <div class="progress-bar-bg">
-      <div class="progress-bar-fill" id="progressFill"></div>
-    </div>
-    <div class="progress-label" id="progressLabel">正在处理...</div>
+    <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+    <div class="progress-label" id="progressLabel"></div>
   </div>
 
-  <!-- Result -->
   <div class="result-box" id="resultBox">
     <div class="result-stats">
-      <div class="stat-card">
-        <div class="val" id="resBefore">-</div>
-        <div class="lbl">压缩前</div>
-      </div>
-      <div class="stat-card">
-        <div class="val" id="resAfter">-</div>
-        <div class="lbl">压缩后</div>
-      </div>
-      <div class="stat-card green">
-        <div class="val" id="resSaved">-</div>
-        <div class="lbl">节省空间</div>
-      </div>
+      <div class="stat-card"><div class="val" id="resBefore">-</div><div class="lbl">压缩前</div></div>
+      <div class="stat-card"><div class="val" id="resAfter" >-</div><div class="lbl">压缩后</div></div>
+      <div class="stat-card green"><div class="val" id="resSaved">-</div><div class="lbl">节省</div></div>
     </div>
     <button class="btn-download" id="btnDownload">⬇ 下载压缩视频</button>
-    <button class="btn-reset" id="btnReset">↩ 重新开始</button>
+    <button class="btn-reset"    id="btnReset"   >↩ 重新开始</button>
   </div>
 </div>
 
 <script>
-  // ─── State ───────────────────────────────────────────────────
-  let originalFile = null;
-  let outputBlob   = null;
-  let outputExt    = 'webm';
+'use strict';
 
-  // ─── Elements ────────────────────────────────────────────────
-  const dropZone      = document.getElementById('dropZone');
-  const fileInput     = document.getElementById('fileInput');
-  const videoInfo     = document.getElementById('videoInfo');
-  const previewWrap   = document.getElementById('previewWrap');
-  const previewVideo  = document.getElementById('previewVideo');
-  const controls      = document.getElementById('controls');
-  const qualityRange  = document.getElementById('qualityRange');
-  const qualityVal    = document.getElementById('qualityVal');
-  const scaleRange    = document.getElementById('scaleRange');
-  const scaleVal      = document.getElementById('scaleVal');
-  const formatSelect  = document.getElementById('formatSelect');
-  const speedSelect   = document.getElementById('speedSelect');
-  const btnCompress   = document.getElementById('btnCompress');
-  const progressWrap  = document.getElementById('progressWrap');
-  const progressFill  = document.getElementById('progressFill');
-  const progressLabel = document.getElementById('progressLabel');
-  const resultBox     = document.getElementById('resultBox');
-  const btnDownload   = document.getElementById('btnDownload');
-  const btnReset      = document.getElementById('btnReset');
+// ═══════════════════════════════════════════════════════════════
+//  ★ 内联 MP4 封装器（零 CDN 依赖，彻底解决网络加载失败问题）
+//
+//  原理：收集 VideoEncoder 输出的 AVC 编码块，
+//        手动构建标准 MP4 box 结构，输出合法 MP4 文件。
+// ═══════════════════════════════════════════════════════════════
 
-  // ─── Helpers ─────────────────────────────────────────────────
-  function formatBytes(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / 1024 / 1024).toFixed(2) + ' MB';
+// ── 基础字节工具 ────────────────────────────────────────────────
+function be32(n) {
+  n = n >>> 0;
+  return new Uint8Array([(n>>>24)&0xff,(n>>>16)&0xff,(n>>>8)&0xff,n&0xff]);
+}
+function be16(n) {
+  return new Uint8Array([(n>>>8)&0xff,n&0xff]);
+}
+function str4(s) {
+  const b = new Uint8Array(4);
+  for (let i=0;i<4;i++) b[i]=s.charCodeAt(i)&0xff;
+  return b;
+}
+function cat(...parts) {
+  let total = 0;
+  for (const p of parts) total += p.length;
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const p of parts) { out.set(p,off); off+=p.length; }
+  return out;
+}
+// MP4 box：4字节大小 + 4字节类型 + 数据
+function box(type, data) {
+  const size = be32(8 + data.length);
+  return cat(size, str4(type), data);
+}
+// FullBox：box 内含 version(1字节) + flags(3字节)
+function fullbox(type, ver, flags, data) {
+  const hdr = new Uint8Array([ver,(flags>>16)&0xff,(flags>>8)&0xff,flags&0xff]);
+  return box(type, cat(hdr, data));
+}
+
+// ── 内联 MP4 封装器类 ──────────────────────────────────────────
+class Mp4Muxer {
+  constructor(width, height) {
+    this.W = width;
+    this.H = height;
+    this.chunks = [];   // { data, timestamp(μs), duration(μs), isKey }
+    this.avcc  = null;  // AVCDecoderConfigurationRecord bytes
   }
 
-  function formatDuration(sec) {
-    const m = Math.floor(sec / 60).toString().padStart(2, '0');
-    const s = Math.floor(sec % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
-  }
-
-  function qualityLabel(v) {
-    v = parseFloat(v);
-    if (v >= 0.85) return `超高 (${v})`;
-    if (v >= 0.65) return `中等 (${v})`;
-    if (v >= 0.40) return `较低 (${v})`;
-    return `最低 (${v})`;
-  }
-
-  function scaleLabel(v) {
-    return Math.round(parseFloat(v) * 100) + '%';
-  }
-
-  // ─── Drag & Drop ─────────────────────────────────────────────
-  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-  dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropZone.classList.remove('drag-over');
-    const f = e.dataTransfer.files[0];
-    if (f && f.type.startsWith('video/')) loadFile(f);
-    else alert('请选择有效的视频文件');
-  });
-
-  fileInput.addEventListener('change', () => {
-    if (fileInput.files[0]) loadFile(fileInput.files[0]);
-  });
-
-  // ─── Load File ───────────────────────────────────────────────
-  function loadFile(file) {
-    originalFile = file;
-    const url = URL.createObjectURL(file);
-
-    document.getElementById('infoName').textContent = file.name.length > 30
-      ? file.name.substring(0, 28) + '…' : file.name;
-    document.getElementById('infoSize').textContent = formatBytes(file.size);
-
-    previewVideo.src = url;
-    previewVideo.onloadedmetadata = () => {
-      document.getElementById('infoDuration').textContent   = formatDuration(previewVideo.duration);
-      document.getElementById('infoResolution').textContent = `${previewVideo.videoWidth} × ${previewVideo.videoHeight}`;
-    };
-
-    videoInfo.classList.add('show');
-    previewWrap.classList.add('show');
-    controls.style.display = 'flex';
-    resultBox.classList.remove('show');
-    progressWrap.classList.remove('show');
-  }
-
-  // ─── Range Sliders ───────────────────────────────────────────
-  qualityRange.addEventListener('input', () => qualityVal.textContent = qualityLabel(qualityRange.value));
-  scaleRange.addEventListener('input', () => scaleVal.textContent = scaleLabel(scaleRange.value));
-
-  // ─── Compress ────────────────────────────────────────────────
-  btnCompress.addEventListener('click', startCompress);
-
-  async function startCompress() {
-    if (!originalFile) return;
-
-    const quality   = parseFloat(qualityRange.value);
-    const scale     = parseFloat(scaleRange.value);
-    const mimeType  = formatSelect.value;
-    const playSpeed = parseFloat(speedSelect.value);
-
-    // Determine extension
-    outputExt = mimeType.includes('mp4') ? 'mp4' : 'webm';
-
-    // Check support
-    if (!MediaRecorder.isTypeSupported(mimeType)) {
-      alert(`⚠ 您的浏览器不支持 "${mimeType}"，请换用 WebM 格式或升级浏览器（推荐 Chrome）。`);
-      return;
+  // VideoEncoder 每输出一个编码块调用此方法
+  addChunk(chunk, meta) {
+    // 从第一个关键帧的 metadata 里提取 AVC 解码器配置（SPS/PPS）
+    if (!this.avcc && meta?.decoderConfig?.description) {
+      const desc = meta.decoderConfig.description;
+      this.avcc = desc instanceof ArrayBuffer
+        ? new Uint8Array(desc)
+        : new Uint8Array(desc.buffer, desc.byteOffset, desc.byteLength);
     }
+    const data = new Uint8Array(chunk.byteLength);
+    chunk.copyTo(data);
+    this.chunks.push({
+      data,
+      timestamp: chunk.timestamp,
+      duration:  chunk.duration ?? 0,
+      isKey:     chunk.type === 'key',
+    });
+  }
 
-    // UI
-    btnCompress.disabled = true;
-    progressWrap.classList.add('show');
-    resultBox.classList.remove('show');
-    setProgress(0, '正在初始化...');
+  // 所有帧收集完毕后，构建完整 MP4 文件
+  finalize() {
+    if (!this.avcc)          throw new Error('未获取到 AVC 解码配置，编码可能失败');
+    if (!this.chunks.length) throw new Error('没有视频帧数据');
 
-    const srcUrl = URL.createObjectURL(originalFile);
+    const W = this.W, H = this.H;
+    const chunks = this.chunks;
 
-    // Create offscreen video
-    const vid = document.createElement('video');
-    vid.src  = srcUrl;
-    vid.muted = true;
-    vid.playbackRate = playSpeed;
-    await new Promise(r => { vid.onloadedmetadata = r; });
+    // 时间轴：使用 90000 Hz（H.264 标准时间尺度）
+    const TS = 90000;
+    const us2ts = us => Math.max(1, Math.round(us * TS / 1_000_000));
 
-    const W = Math.round(vid.videoWidth  * scale);
-    const H = Math.round(vid.videoHeight * scale);
-    const duration = vid.duration;
-
-    // Canvas
-    const canvas = document.createElement('canvas');
-    canvas.width  = W;
-    canvas.height = H;
-    const ctx = canvas.getContext('2d');
-
-    // Bitrate estimation
-    const bitsPerPixel = quality * 0.08;
-    const fps = 30;
-    const videoBitrate = Math.round(W * H * fps * bitsPerPixel);
-
-    // MediaRecorder on canvas stream
-    const stream = canvas.captureStream(fps);
-    const recorder = new MediaRecorder(stream, {
-      mimeType,
-      videoBitsPerSecond: videoBitrate
+    // 计算每帧在 TS 单位下的时长，修复 duration 为 null 的情况
+    const sc = chunks.map((c, i) => {
+      let dur = c.duration > 0 ? c.duration
+              : (i < chunks.length-1 ? chunks[i+1].timestamp - c.timestamp : 33333);
+      return { data: c.data, dur: us2ts(dur), isKey: c.isKey };
     });
 
-    const chunks = [];
-    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    const totalDur = sc.reduce((s,c) => s+c.dur, 0);
+    const n = sc.length;
 
-    recorder.onstop = () => {
-      outputBlob = new Blob(chunks, { type: mimeType.split(';')[0] });
-      showResult(outputBlob);
-      URL.revokeObjectURL(srcUrl);
+    // ── ftyp ──────────────────────────────────────────────────
+    const ftyp = box('ftyp', cat(
+      str4('isom'), be32(0x200),
+      str4('isom'), str4('iso2'), str4('avc1'), str4('mp41'),
+    ));
+
+    // ── avcC（AVC解码器配置，直接放入 avc1 子box）─────────────
+    const avcC = box('avcC', this.avcc);
+
+    // ── avc1（视频采样描述）──────────────────────────────────────
+    const avc1 = box('avc1', cat(
+      new Uint8Array(6),         // reserved
+      be16(1),                   // data-reference-index
+      new Uint8Array(16),        // pre_defined + reserved
+      be16(W), be16(H),          // width, height
+      be32(0x00480000),          // horiz resolution 72dpi
+      be32(0x00480000),          // vert  resolution 72dpi
+      be32(0),                   // reserved
+      be16(1),                   // frame_count
+      new Uint8Array(32),        // compressorname (空)
+      be16(0x0018),              // depth = 24-bit
+      new Uint8Array([0xff,0xff]),// pre_defined = -1
+      avcC,
+    ));
+
+    // ── stsd（采样描述表）──────────────────────────────────────
+    const stsd = fullbox('stsd', 0, 0, cat(be32(1), avc1));
+
+    // ── stts（时间→采样映射，游程编码帧时长）─────────────────────
+    const runs = [];
+    for (const c of sc) {
+      if (runs.length && runs[runs.length-1].dur === c.dur) runs[runs.length-1].cnt++;
+      else runs.push({cnt:1, dur:c.dur});
+    }
+    const stts = fullbox('stts', 0, 0, cat(
+      be32(runs.length),
+      ...runs.map(r => cat(be32(r.cnt), be32(r.dur))),
+    ));
+
+    // ── stss（关键帧索引，1-based）──────────────────────────────
+    const keys = sc.map((c,i) => c.isKey ? i+1 : 0).filter(Boolean);
+    const stss = fullbox('stss', 0, 0, cat(be32(keys.length), ...keys.map(be32)));
+
+    // ── stsz（每帧字节大小）─────────────────────────────────────
+    const stsz = fullbox('stsz', 0, 0, cat(
+      be32(0), be32(n),
+      ...sc.map(c => be32(c.data.length)),
+    ));
+
+    // ── stsc（采样→chunk 映射：所有帧放在 1 个 chunk 里）────────
+    const stsc = fullbox('stsc', 0, 0, cat(
+      be32(1),
+      be32(1), be32(n), be32(1),  // chunk1, n个采样, stsd-index=1
+    ));
+
+    // ── moov 构建函数（stco 的偏移量在两次调用之间变化）──────────
+    const buildMoov = (mdatBodyOffset) => {
+      // stco：chunk 在文件中的字节偏移（指向 mdat 数据区，跳过 box 头）
+      const stco = fullbox('stco', 0, 0, cat(be32(1), be32(mdatBodyOffset)));
+
+      const stbl = box('stbl', cat(stsd, stts, stss, stsz, stsc, stco));
+
+      const url_ = fullbox('url ', 0, 1, new Uint8Array(0)); // 自包含
+      const dref = fullbox('dref', 0, 0, cat(be32(1), url_));
+      const dinf = box('dinf', dref);
+      const vmhd = fullbox('vmhd', 0, 1, cat(be16(0),be16(0),be16(0),be16(0)));
+      const minf = box('minf', cat(vmhd, dinf, stbl));
+
+      const hdlr = fullbox('hdlr', 0, 0, cat(
+        be32(0), str4('vide'),
+        be32(0), be32(0), be32(0),
+        new TextEncoder().encode('VideoHandler\0'),
+      ));
+      const mdhd = fullbox('mdhd', 0, 0, cat(
+        be32(0), be32(0),    // creation / modification time
+        be32(TS),             // timescale
+        be32(totalDur),       // duration
+        be16(0x55c4),         // language: und
+        be16(0),
+      ));
+      const mdia = box('mdia', cat(mdhd, hdlr, minf));
+
+      // 变换矩阵（单位矩阵）
+      const matrix = cat(
+        be32(0x00010000),be32(0),be32(0),
+        be32(0),be32(0x00010000),be32(0),
+        be32(0),be32(0),be32(0x40000000),
+      );
+      const tkhd = fullbox('tkhd', 0, 3, cat(
+        be32(0), be32(0),    // creation / modification time
+        be32(1),              // track id
+        be32(0),              // reserved
+        be32(totalDur),       // duration（电影时间尺度）
+        be32(0), be32(0),    // reserved
+        be16(0), be16(0),    // layer, alternate_group
+        be16(0), be16(0),    // volume (视频为0)
+        matrix,
+        be32(W<<16), be32(H<<16), // width, height (16.16 定点)
+      ));
+      const trak = box('trak', cat(tkhd, mdia));
+
+      const mvhd = fullbox('mvhd', 0, 0, cat(
+        be32(0), be32(0),    // creation / modification time
+        be32(TS),             // timescale
+        be32(totalDur),       // duration
+        be32(0x00010000),     // rate = 1.0
+        be16(0x0100),         // volume = 1.0
+        new Uint8Array(10),   // reserved
+        matrix,
+        new Uint8Array(24),   // pre_defined
+        be32(2),              // next track id
+      ));
+      return box('moov', cat(mvhd, trak));
     };
 
-    recorder.start(200); // collect every 200ms
+    // 两次构建：第一次量尺寸，第二次填正确偏移
+    const moovDummy    = buildMoov(0);
+    const mdatBodyOff  = ftyp.length + moovDummy.length + 8; // +8 = mdat box 头
+    const moov         = buildMoov(mdatBodyOff);
 
-    // Draw loop
-    vid.currentTime = 0;
-    await new Promise(r => { vid.onseeked = r; });
-    vid.play();
+    // ── mdat（所有帧数据连续存放）─────────────────────────────
+    const mdatPayload = cat(...sc.map(c => c.data));
+    const mdat = cat(be32(8 + mdatPayload.length), str4('mdat'), mdatPayload);
 
-    const drawFrame = () => {
-      if (vid.ended || vid.currentTime >= duration) {
-        recorder.stop();
-        setProgress(100, '✅ 压缩完成！');
-        btnCompress.disabled = false;
-        return;
+    // ── 最终文件：ftyp + moov + mdat（fastStart 顺序）──────────
+    return cat(ftyp, moov, mdat);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  能力检测（无需 CDN，纯本地）
+// ═══════════════════════════════════════════════════════════════
+const HAS_WC   = typeof VideoEncoder    !== 'undefined'
+              && typeof VideoFrame      !== 'undefined'
+              && typeof OffscreenCanvas !== 'undefined';
+const HAS_RVFC = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
+
+const $ = id => document.getElementById(id);
+
+// ═══════════════════════════════════════════════════════════════
+//  状态 & 格式配置
+// ═══════════════════════════════════════════════════════════════
+let originalFile=null, outputBlob=null, outputExt='mp4', srcFPS=30;
+
+const FORMAT = {
+  'mp4'     : { ext:'mp4',  tip:'兼容性最佳，适合所有平台' },
+  'mov'     : { ext:'mov',  tip:'Apple / Final Cut Pro 常用' },
+  'webm-vp9': { ext:'webm', tip:'体积最小，网页端首选', mime:'video/webm;codecs=vp9' },
+  'webm-vp8': { ext:'webm', tip:'WebM 兼容格式',       mime:'video/webm;codecs=vp8' },
+};
+
+function onFormatChange() {
+  $('formatTip').textContent = FORMAT[$('formatSelect').value]?.tip ?? '';
+}
+
+function setProg(pct, txt) {
+  $('progressFill').style.width = pct+'%';
+  $('progressLabel').textContent = txt;
+}
+
+const fmtB = b => b<1048576 ? (b/1024).toFixed(1)+' KB' : (b/1048576).toFixed(2)+' MB';
+const fmtT = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+
+// ═══════════════════════════════════════════════════════════════
+//  拖拽 / 选文件
+// ═══════════════════════════════════════════════════════════════
+const dz = $('dropZone');
+dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', ()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e=>{
+  e.preventDefault(); dz.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f?.type.startsWith('video/')) loadFile(f); else alert('请选择视频文件');
+});
+$('fileInput').addEventListener('change', ()=>{ if($('fileInput').files[0]) loadFile($('fileInput').files[0]); });
+
+// ═══════════════════════════════════════════════════════════════
+//  加载文件 + 探测帧率
+// ═══════════════════════════════════════════════════════════════
+async function loadFile(file) {
+  originalFile = file;
+  $('infoName').textContent = file.name.length>30 ? file.name.slice(0,28)+'…' : file.name;
+  $('infoSize').textContent = fmtB(file.size);
+
+  const pv = $('previewVideo');
+  pv.src = URL.createObjectURL(file);
+  await waitFor(pv, 'loadedmetadata', ()=>pv.readyState>=1);
+  $('infoDuration').textContent   = fmtT(pv.duration);
+  $('infoResolution').textContent = `${pv.videoWidth} × ${pv.videoHeight}`;
+
+  $('progressWrap').classList.add('show');
+  setProg(0, '🔍 探测源帧率...');
+  await waitFor(pv, 'canplay', ()=>pv.readyState>=3);
+  srcFPS = await probeFPS(pv);
+  pv.currentTime = 0;
+  await waitFor(pv,'seeked');
+  $('progressWrap').classList.remove('show');
+
+  $('infoResolution').textContent = `${pv.videoWidth} × ${pv.videoHeight} / ${srcFPS} fps`;
+  $('videoInfo').classList.add('show');
+  $('previewWrap').classList.add('show');
+  $('controls').style.display='flex';
+  $('resultBox').classList.remove('show');
+}
+
+function probeFPS(videoEl) {
+  return new Promise(resolve=>{
+    if (!HAS_RVFC) { resolve(30); return; }
+    const SAMPLES=30, times=[];
+    function tick(_,m) {
+      times.push(m.mediaTime);
+      if (times.length<SAMPLES) { videoEl.requestVideoFrameCallback(tick); return; }
+      videoEl.pause();
+      const iv=[];
+      for(let i=1;i<times.length;i++){const d=times[i]-times[i-1];if(d>.004&&d<.15)iv.push(d);}
+      if(!iv.length){resolve(30);return;}
+      iv.sort((a,b)=>a-b);
+      const raw = 1/iv[Math.floor(iv.length/2)];
+      const STD=[15,24,25,30,50,60];
+      resolve(STD.reduce((p,c)=>Math.abs(c-raw)<Math.abs(p-raw)?c:p));
+    }
+    videoEl.currentTime=1;
+    videoEl.addEventListener('seeked',()=>{
+      videoEl.muted=true;
+      videoEl.play().then(()=>videoEl.requestVideoFrameCallback(tick));
+    },{once:true});
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  滑块
+// ═══════════════════════════════════════════════════════════════
+$('qualityRange').addEventListener('input',()=>{
+  const v=+$('qualityRange').value;
+  $('qualityVal').textContent=v>=.85?`超高(${v})`:v>=.65?`中等(${v})`:v>=.4?`较低(${v})`:`最低(${v})`;
+});
+$('scaleRange').addEventListener('input',()=>$('scaleVal').textContent=Math.round($('scaleRange').value*100)+'%');
+
+// ═══════════════════════════════════════════════════════════════
+//  压缩入口
+// ═══════════════════════════════════════════════════════════════
+$('btnCompress').addEventListener('click', async()=>{
+  if(!originalFile) return;
+
+  const quality   = +$('qualityRange').value;
+  const scale     = +$('scaleRange').value;
+  const fmtKey    = $('formatSelect').value;
+  const userFPS   = +$('fpsSelect').value;
+  const targetFPS = userFPS>0 ? userFPS : srcFPS;
+  const isMP4     = fmtKey==='mp4'||fmtKey==='mov';
+
+  outputExt = FORMAT[fmtKey].ext;
+  $('btnCompress').disabled=true;
+  $('progressWrap').classList.add('show');
+  $('resultBox').classList.remove('show');
+  setProg(0,'⏳ 初始化...');
+
+  const srcUrl = URL.createObjectURL(originalFile);
+  try {
+    if (HAS_WC && HAS_RVFC && isMP4) {
+      // WebCodecs 精准模式（内联 MP4 封装，零网络依赖）
+      outputBlob = await encodeWebCodecs(srcUrl, scale, targetFPS, quality);
+    } else {
+      // 兼容模式（WebM 格式 / 非 Chrome 浏览器）
+      const mime = FORMAT[fmtKey].mime
+        ?? (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
+            ? 'video/webm;codecs=vp9' : 'video/webm');
+      if(isMP4) outputExt='webm';
+      outputBlob = await encodeMediaRecorder(srcUrl, scale, targetFPS, quality, mime);
+    }
+    setProg(100,'✅ 压缩完成！');
+    showResult();
+  } catch(e) {
+    console.error(e);
+    setProg(0,'❌ '+e.message);
+    $('btnCompress').disabled=false;
+  } finally {
+    URL.revokeObjectURL(srcUrl);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  ★ WebCodecs 精准压缩（使用内联 Mp4Muxer，无需任何 CDN）
+// ═══════════════════════════════════════════════════════════════
+async function encodeWebCodecs(srcUrl, scale, targetFPS, quality) {
+  const vid      = await readyVideo(srcUrl);
+  const duration = vid.duration;
+
+  // H.264 要求宽高为偶数
+  const W = Math.floor(vid.videoWidth  * scale / 2) * 2;
+  const H = Math.floor(vid.videoHeight * scale / 2) * 2;
+
+  const totalFrames = Math.round(duration * targetFPS);
+  const frameDur    = Math.round(1_000_000 / targetFPS); // 每帧时长（微秒）
+  const bitrate     = Math.max(200_000, Math.round(W * H * targetFPS * quality * 0.08));
+  const keyEvery    = Math.max(1, Math.round(targetFPS * 2));
+
+  // 自动选最优 H.264 Profile
+  const codec = await bestH264(W, H);
+  if (!codec) throw new Error('H.264 编码不支持，请改选 WebM 格式');
+
+  const muxer = new Mp4Muxer(W, H); // 使用内联封装器
+
+  setProg(0,'🎬 WebCodecs 启动（内联封装）...');
+
+  return new Promise((resolve, reject)=>{
+    const encoder = new VideoEncoder({
+      output: (chunk, meta)=>{ try{ muxer.addChunk(chunk, meta); } catch(e){ reject(e); } },
+      error: reject,
+    });
+
+    encoder.configure({
+      codec,
+      width:     W,
+      height:    H,
+      bitrate,
+      framerate: targetFPS,
+      avc: { format: 'avc' }, // 输出 AVCC 格式（MP4 所需）
+    });
+
+    const canvas = new OffscreenCanvas(W, H);
+    const ctx    = canvas.getContext('2d');
+    let frameIndex=0, done=false;
+
+    async function finalize() {
+      if(done) return; done=true;
+      try {
+        await encoder.flush();
+        const mp4 = muxer.finalize();          // 内联封装，无网络请求
+        resolve(new Blob([mp4],{type:'video/mp4'}));
+      } catch(e){ reject(e); }
+    }
+
+    vid.addEventListener('ended', finalize, {once:true});
+
+    // RVFC 帧循环：timestamp = frameIndex × frameDur（均匀，不受挂钟影响）
+    vid.requestVideoFrameCallback(function onFrame(_,meta){
+      if(done) return;
+
+      // while 循环：处理升帧率时一次 RVFC 需编码多帧的情况
+      while(frameIndex < totalFrames) {
+        const expectedSec = frameIndex / targetFPS;
+        if(meta.mediaTime < expectedSec - 0.001) break; // 等下次 RVFC
+
+        ctx.drawImage(vid, 0, 0, W, H);
+        const vf = new VideoFrame(canvas, {
+          timestamp: frameIndex * frameDur,  // ★ 精确均匀时间戳
+          duration:  frameDur,
+        });
+        encoder.encode(vf, {keyFrame: frameIndex % keyEvery === 0});
+        vf.close();
+        frameIndex++;
       }
-      ctx.drawImage(vid, 0, 0, W, H);
-      const pct = Math.min(99, Math.round((vid.currentTime / duration) * 100));
-      setProgress(pct, `⚙ 处理中... ${pct}%  (${formatDuration(vid.currentTime)} / ${formatDuration(duration)})`);
-      requestAnimationFrame(drawFrame);
-    };
 
-    vid.onplay = () => requestAnimationFrame(drawFrame);
-  }
+      const pct = Math.min(99, Math.round(frameIndex/totalFrames*100));
+      setProg(pct,`⚙ ${pct}% · ${fmtT(meta.mediaTime)}/${fmtT(duration)} · ${targetFPS}fps`);
 
-  function setProgress(pct, label) {
-    progressFill.style.width = pct + '%';
-    progressLabel.textContent = label;
-  }
+      if(frameIndex>=totalFrames){ finalize(); return; }
+      vid.requestVideoFrameCallback(onFrame);
+    });
 
-  // ─── Show Result ─────────────────────────────────────────────
-  function showResult(blob) {
-    const before = originalFile.size;
-    const after  = blob.size;
-    const saved  = Math.max(0, Math.round((1 - after / before) * 100));
-
-    document.getElementById('resBefore').textContent = formatBytes(before);
-    document.getElementById('resAfter').textContent  = formatBytes(after);
-    document.getElementById('resSaved').textContent  = saved + '%';
-    resultBox.classList.add('show');
-  }
-
-  // ─── Download ────────────────────────────────────────────────
-  btnDownload.addEventListener('click', () => {
-    if (!outputBlob) return;
-    const name = (originalFile.name.replace(/\.[^.]+$/, '') || 'video') + '_compressed.' + outputExt;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(outputBlob);
-    a.download = name;
-    a.click();
+    vid.play().catch(reject);
   });
+}
 
-  // ─── Reset ───────────────────────────────────────────────────
-  btnReset.addEventListener('click', () => {
-    originalFile = null;
-    outputBlob   = null;
-    fileInput.value = '';
-    previewVideo.src = '';
-    videoInfo.classList.remove('show');
-    previewWrap.classList.remove('show');
-    controls.style.display = 'none';
-    progressWrap.classList.remove('show');
-    resultBox.classList.remove('show');
-    progressFill.style.width = '0%';
-    btnCompress.disabled = false;
+async function bestH264(w,h) {
+  for(const c of ['avc1.640028','avc1.4d0028','avc1.42001e']){
+    try{
+      const {supported}=await VideoEncoder.isConfigSupported({codec:c,width:w,height:h,bitrate:1_000_000});
+      if(supported) return c;
+    }catch(_){}
+  }
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MediaRecorder 兼容模式（WebM / Firefox / Safari）
+// ═══════════════════════════════════════════════════════════════
+async function encodeMediaRecorder(srcUrl, scale, targetFPS, quality, mime) {
+  if(!MediaRecorder.isTypeSupported(mime)) throw new Error(`浏览器不支持 ${mime}，请换格式`);
+
+  const vid      = await readyVideo(srcUrl);
+  const duration = vid.duration;
+  const W = Math.round(vid.videoWidth  * scale);
+  const H = Math.round(vid.videoHeight * scale);
+  const br= Math.max(100_000, Math.round(W*H*targetFPS*quality*0.08));
+
+  const canvas=document.createElement('canvas');
+  canvas.width=W; canvas.height=H;
+  const ctx=canvas.getContext('2d',{alpha:false});
+  ctx.drawImage(vid,0,0,W,H);
+
+  return new Promise((resolve,reject)=>{
+    const stream  =canvas.captureStream(targetFPS);
+    const recorder=new MediaRecorder(stream,{mimeType:mime,videoBitsPerSecond:br});
+    const chunks  =[];
+
+    recorder.ondataavailable=e=>{ if(e.data.size>0) chunks.push(e.data); };
+    recorder.onstop  =()=>resolve(new Blob(chunks,{type:mime.split(';')[0]}));
+    recorder.onerror =reject;
+
+    const minIv=1/targetFPS;
+    let lastT=-1, done=false;
+
+    function loop(_,meta){
+      if(done) return;
+      const t=meta?meta.mediaTime:vid.currentTime;
+      if(t-lastT>=minIv-0.001){ ctx.drawImage(vid,0,0,W,H); lastT=t; }
+      setProg(Math.min(99,Math.round(vid.currentTime/duration*100)),
+        `⚙ 兼容模式 ${Math.round(vid.currentTime/duration*100)}% · ${fmtT(vid.currentTime)}/${fmtT(duration)}`);
+      if(HAS_RVFC) vid.requestVideoFrameCallback(loop);
+      else requestAnimationFrame(loop);
+    }
+
+    function finish(){
+      if(done) return; done=true;
+      ctx.drawImage(vid,0,0,W,H);
+      recorder.stop();
+    }
+
+    vid.addEventListener('ended',finish,{once:true});
+    setInterval(()=>{ if(!done&&vid.currentTime>=duration-.15) finish(); },200);
+
+    recorder.start(100);
+    vid.play().then(()=>{
+      if(HAS_RVFC) vid.requestVideoFrameCallback(loop);
+      else requestAnimationFrame(loop);
+    }).catch(reject);
   });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  工具函数
+// ═══════════════════════════════════════════════════════════════
+async function readyVideo(src) {
+  const v=document.createElement('video');
+  Object.assign(v,{src,muted:true,playsInline:true,preload:'auto',playbackRate:1});
+  v.load();
+  await waitFor(v,'canplay',()=>v.readyState>=3);
+  v.currentTime=0;
+  await waitFor(v,'seeked');
+  return v;
+}
+
+function waitFor(el,evt,cond) {
+  return new Promise(r=>{ if(cond&&cond()){r();return;} el.addEventListener(evt,r,{once:true}); });
+}
+
+function showResult() {
+  const s=Math.max(0,Math.round((1-outputBlob.size/originalFile.size)*100));
+  $('resBefore').textContent=fmtB(originalFile.size);
+  $('resAfter').textContent =fmtB(outputBlob.size);
+  $('resSaved').textContent =s+'%';
+  $('resultBox').classList.add('show');
+  $('btnCompress').disabled=false;
+}
+
+$('btnDownload').addEventListener('click',()=>{
+  if(!outputBlob) return;
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(outputBlob);
+  a.download=originalFile.name.replace(/\.[^.]+$/,'')+'_compressed.'+outputExt;
+  a.click();
+});
+
+$('btnReset').addEventListener('click',()=>{
+  originalFile=outputBlob=null; srcFPS=30;
+  $('fileInput').value=''; $('previewVideo').src='';
+  ['videoInfo','previewWrap','progressWrap','resultBox'].forEach(id=>$(id).classList.remove('show'));
+  $('controls').style.display='none';
+  $('progressFill').style.width='0%';
+  $('progressLabel').textContent='';
+  $('btnCompress').disabled=false;
+});
 </script>
 </body>
 </html>
