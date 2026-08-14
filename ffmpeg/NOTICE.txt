@@ -1,0 +1,12 @@
+This folder contains local browser builds from:
+
+- @ffmpeg/ffmpeg 0.12.15 (MIT)
+- @ffmpeg/core 0.12.10 (GPL-2.0-or-later, including FFmpeg and libx264)
+
+Project and source code:
+https://github.com/ffmpegwasm/ffmpeg.wasm
+
+FFmpeg licensing information:
+https://ffmpeg.org/legal.html
+
+These files are bundled locally so the video itself never needs to be uploaded.
